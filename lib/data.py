@@ -2,26 +2,17 @@
 """
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+import pickle
+from torch.utils.data.dataset import Dataset
 
 
-def to_tuple(img_path, category_idx, attribute_idxes):
-    num_categories = 50
-    num_attributes = 1000
-
-    category = np.zeros(num_categories)  # one hot encoded
-    attributes = np.zeros(num_attributes)  # as is, i.e. list of -1, 0 or 1
-
-    category[category_idx - 1] = 1
-
-    return img_path, category, attributes
-
-
-class DeepFashion():
+class DeepFashion:
 
     def __init__(self, dataset_path):
 
         # The constants
-        img_folder_name = "Img"
+        img_folder_name = "img"
         eval_folder_name = "Eval"
         anno_folder_name = "Anno"
         list_eval_partition_file = "list_eval_partition.txt"
@@ -50,11 +41,22 @@ class DeepFashion():
 
     def read_img_files_list(self):
 
+        fashion_db = "fashion.db"
+        # If we already have the data structures on filesystem, read it and return
+        if os.path.exists(fashion_db):
+            print("Reading data structures from: ", fashion_db)
+            db = open(fashion_db, "rb")
+            self.train_imgs, self.val_imgs, self.test_imgs = pickle.load(db)
+            print("Training images", len(self.train_imgs))
+            print("Validation images", len(self.val_imgs))
+            print("Test images", len(self.test_imgs))
+            return
+
         # Read in the image to category mapping
         image_to_category = {}
         with open(self.list_category_img) as f:
             imgs_count = int(f.readline().strip())
-            _ = f.readline().strip() # read and throw away the header
+            _ = f.readline().strip()  # read and throw away the header
 
             for line in f:
                 words = line.split()
@@ -65,7 +67,7 @@ class DeepFashion():
         image_to_attributes = {}
         with open(self.list_attr_img) as f:
             imgs_count = int(f.readline().strip())
-            _ = f.readline().strip() # read and throw away the header
+            _ = f.readline().strip()  # read and throw away the header
             for line in f:
                 words = line.split(sep='jpg')
                 lst = [int(i) for i in words[1].strip().split()]
@@ -97,6 +99,28 @@ class DeepFashion():
         print("Test images", len(self.test_imgs))
         assert(imgs_count == (len(self.train_imgs)+len(self.test_imgs)+len(self.val_imgs)))
 
+        # Store the data structures
+        db = open(fashion_db, "wb")
+        pickle.dump((self.train_imgs, self.val_imgs, self.test_imgs), db)
+        db.close()
+        print("Data structures stored on filesystem as: ", fashion_db)
 
-df = DeepFashion("/home/as/datasets/lily/deep-fashion")
-print(df.val_imgs[0])
+
+class DeepFashionDataset(Dataset):
+
+    def __init__(self, dataset, dataset_path):
+        self.dataset = dataset
+        self.dataset_path = dataset_path
+
+    def __getitem__(self, index):
+        item = self.dataset[index]
+        img_path, category, attributes = item
+        image = plt.imread(os.path.join(self.dataset_path, img_path))
+        return image, category, attributes
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+#df = DeepFashion("/home/as/datasets/lily/deep-fashion")
+#print(df.val_imgs[0])
