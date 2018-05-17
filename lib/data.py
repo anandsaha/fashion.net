@@ -84,7 +84,7 @@ class DeepFashion:
                 category_idx = image_to_category[img]
                 category = np.zeros(50)  # one hot encoded
                 category[category_idx - 1] = 1
-                attributes = image_to_attributes[img]
+                attributes = np.asarray(image_to_attributes[img], dtype=np.int16)
 
                 if words[1].strip() == "train":
                     self.train_imgs.append((img, category, attributes))
