@@ -4,7 +4,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from torch.utils.data.dataset import Dataset
 
 
 class DeepFashion:
@@ -104,22 +103,6 @@ class DeepFashion:
         pickle.dump((self.train_imgs, self.val_imgs, self.test_imgs), db)
         db.close()
         print("Data structures stored on filesystem as: ", fashion_db)
-
-
-class DeepFashionDataset(Dataset):
-
-    def __init__(self, dataset, dataset_path):
-        self.dataset = dataset
-        self.dataset_path = dataset_path
-
-    def __getitem__(self, index):
-        item = self.dataset[index]
-        img_path, category, attributes = item
-        image = plt.imread(os.path.join(self.dataset_path, img_path))
-        return image, category, attributes
-
-    def __len__(self):
-        return len(self.dataset)
 
 
 #df = DeepFashion("/home/as/datasets/lily/deep-fashion")
